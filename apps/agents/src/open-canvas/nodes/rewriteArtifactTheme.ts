@@ -32,6 +32,7 @@ export const rewriteArtifactTheme = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
+  console.log("- entering rewriteArtifactTheme");
   const { modelName } = getModelConfig(config);
   const smallModel = await getModelFromConfig(config);
 

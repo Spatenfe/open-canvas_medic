@@ -6,6 +6,7 @@ export const generateTitleNode = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ) => {
+  console.log("- entering generateTitleNode");
   if (state.messages.length > 2) {
     // Skip if it's not first human ai conversation. Should never occur in practice
     // due to the conditional edge which is called before this node.

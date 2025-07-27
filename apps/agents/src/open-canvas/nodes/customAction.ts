@@ -39,6 +39,7 @@ export const customAction = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
+  console.log("- entering customAction");
   if (!state.customQuickActionId) {
     throw new Error("No custom quick action ID found.");
   }

@@ -59,6 +59,7 @@ async function dynamicDeterminePathFunc({
         : NO_ARTIFACT_PROMPT
     );
 
+
   const artifactRoute = currentArtifactContent
     ? "rewriteArtifact"
     : "generateArtifact";
@@ -88,6 +89,9 @@ async function dynamicDeterminePathFunc({
   );
 
   const contextDocumentMessages = await createContextDocumentMessages(config);
+  console.log("modelWithTool", modelWithTool);
+  console.log("model type", model.constructor?.name || typeof model);
+  
   const result = await modelWithTool.invoke([
     ...contextDocumentMessages,
     ...(newMessages.length ? newMessages : []),
@@ -96,6 +100,7 @@ async function dynamicDeterminePathFunc({
       content: formattedPrompt,
     },
   ]);
+  console.log(result);
 
   return result.tool_calls?.[0]?.args as z.infer<typeof schema> | undefined;
 }

@@ -29,6 +29,7 @@ export const updateArtifact = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
+  console.log("- entering updateArtifact");
   const { modelProvider, modelName } = getModelConfig(config);
   let smallModel: Awaited<ReturnType<typeof getModelFromConfig>>;
   if (modelProvider.includes("openai") || modelName.includes("3-5-sonnet")) {

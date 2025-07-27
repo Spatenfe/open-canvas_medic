@@ -45,6 +45,7 @@ export const updateHighlightedText = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
+  console.log("- entering updateHighlightedText");
   const { modelProvider, modelName } = getModelConfig(config);
   let model: RunnableBinding<
     BaseLanguageModelInput,

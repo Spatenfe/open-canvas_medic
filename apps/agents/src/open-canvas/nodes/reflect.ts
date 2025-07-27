@@ -7,6 +7,7 @@ export const reflectNode = async (
   config: LangGraphRunnableConfig
 ) => {
   try {
+    console.log("- entering reflectNode");
     const langGraphClient = new Client({
       apiUrl: `http://localhost:${process.env.PORT}`,
     });

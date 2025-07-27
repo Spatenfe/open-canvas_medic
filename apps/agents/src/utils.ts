@@ -160,141 +160,33 @@ export const formatArtifactContentWithTemplate = (
 };
 
 export const getModelConfig = (
-  config: LangGraphRunnableConfig,
-  extra?: {
-    isToolCalling?: boolean;
-  }
-): {
+  config: LangGraphRunnableConfig): {
   modelName: string;
   modelProvider: string;
   modelConfig?: CustomModelConfig;
-  azureConfig?: {
-    azureOpenAIApiKey: string;
-    azureOpenAIApiInstanceName: string;
-    azureOpenAIApiDeploymentName: string;
-    azureOpenAIApiVersion: string;
-    azureOpenAIBasePath?: string;
-  };
   apiKey?: string;
   baseUrl?: string;
+  configuration?: {
+    baseURL?: string;
+  };
 } => {
   const customModelName = config.configurable?.customModelName as string;
   if (!customModelName) throw new Error("Model name is missing in config.");
 
-  const modelConfig = config.configurable?.modelConfig as CustomModelConfig;
+  //const modelConfig = config.configurable?.modelConfig as CustomModelConfig;
 
-  if (customModelName.startsWith("azure/")) {
-    let actualModelName = customModelName.replace("azure/", "");
-    if (extra?.isToolCalling && actualModelName.includes("o1")) {
-      // Fallback to 4o model for tool calling since o1 does not support tools.
-      actualModelName = "gpt-4o";
-    }
+  console.log("getModelConfig", customModelName)
+  console.log("vllm api url", process.env.VLLM_API_URL)
+  console.log("baseUrl", config.configurable?.baseUrl)
+  console.log("baseUrl 2", process.env.OPENAI_API_BASE)
+  
+  if (customModelName.startsWith("local-vllm/")) {
     return {
-      modelName: actualModelName,
-      modelProvider: "azure_openai",
-      azureConfig: {
-        azureOpenAIApiKey: process.env._AZURE_OPENAI_API_KEY || "",
-        azureOpenAIApiInstanceName:
-          process.env._AZURE_OPENAI_API_INSTANCE_NAME || "",
-        azureOpenAIApiDeploymentName:
-          process.env._AZURE_OPENAI_API_DEPLOYMENT_NAME || "",
-        azureOpenAIApiVersion:
-          process.env._AZURE_OPENAI_API_VERSION || "2024-08-01-preview",
-        azureOpenAIBasePath: process.env._AZURE_OPENAI_API_BASE_PATH,
-      },
-    };
-  }
-
-  const providerConfig = {
-    modelName: customModelName,
-    modelConfig,
-  };
-
-  if (
-    customModelName.includes("gpt-") ||
-    customModelName.includes("o1") ||
-    customModelName.includes("o3")
-  ) {
-    let actualModelName = providerConfig.modelName;
-    if (extra?.isToolCalling && actualModelName.includes("o1")) {
-      // Fallback to 4o model for tool calling since o1 does not support tools.
-      actualModelName = "gpt-4o";
-    }
-    return {
-      ...providerConfig,
-      modelName: actualModelName,
+      modelName: customModelName.replace("local-vllm/", ""),
       modelProvider: "openai",
-      apiKey: process.env.OPENAI_API_KEY,
-    };
-  }
-
-  if (customModelName.includes("claude-")) {
-    return {
-      ...providerConfig,
-      modelProvider: "anthropic",
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    };
-  }
-
-  if (customModelName.includes("fireworks/")) {
-    let actualModelName = providerConfig.modelName;
-    if (
-      extra?.isToolCalling &&
-      actualModelName !== "accounts/fireworks/models/llama-v3p3-70b-instruct"
-    ) {
-      actualModelName = "accounts/fireworks/models/llama-v3p3-70b-instruct";
-    }
-    return {
-      ...providerConfig,
-      modelName: actualModelName,
-      modelProvider: "fireworks",
-      apiKey: process.env.FIREWORKS_API_KEY,
-    };
-  }
-
-  if (customModelName.startsWith("groq/")) {
-    const actualModelName = customModelName.replace("groq/", "");
-    return {
-      modelName: actualModelName,
-      modelProvider: "groq",
-      apiKey: process.env.GROQ_API_KEY,
-    };
-  }
-
-  if (customModelName.includes("gemini-")) {
-    let actualModelName = providerConfig.modelName;
-    if (extra?.isToolCalling && actualModelName.includes("thinking")) {
-      // Gemini thinking does not support tools.
-      actualModelName = "gemini-2.0-flash-exp";
-    }
-    return {
-      ...providerConfig,
-      modelName: actualModelName,
-      modelProvider: "google-genai",
-      apiKey: process.env.GOOGLE_API_KEY,
-    };
-  }
-
-  if (customModelName.includes("gemini-")) {
-    let actualModelName = providerConfig.modelName;
-    if (extra?.isToolCalling && actualModelName.includes("thinking")) {
-      // Gemini thinking does not support tools.
-      actualModelName = "gemini-2.0-flash-exp";
-    }
-    return {
-      ...providerConfig,
-      modelName: actualModelName,
-      modelProvider: "google-genai",
-      apiKey: process.env.GOOGLE_API_KEY,
-    };
-  }
-
-  if (customModelName.startsWith("ollama-")) {
-    return {
-      modelName: customModelName.replace("ollama-", ""),
-      modelProvider: "ollama",
-      baseUrl:
-        process.env.OLLAMA_API_URL || "http://host.docker.internal:11434",
+      configuration: {
+        baseURL: process.env.VLLM_API_URL,
+      },
     };
   }
 
@@ -349,13 +241,13 @@ export async function getModelFromConfig(
   const {
     modelName,
     modelProvider,
-    azureConfig,
     apiKey,
     baseUrl,
     modelConfig,
-  } = getModelConfig(config, {
-    isToolCalling: extra?.isToolCalling,
-  });
+    configuration,
+  } = getModelConfig(config);
+
+  console.log("configuration in getModelFromConfig", configuration);
   const { temperature = 0.5, maxTokens } = {
     temperature: modelConfig?.temperatureRange.current,
     maxTokens: modelConfig?.maxTokens.current,
@@ -383,7 +275,8 @@ export async function getModelFromConfig(
     (m) => m === modelName
   );
 
-  return await initChatModel(modelName, {
+  
+  const initializedModel = await initChatModel(modelName, {
     modelProvider,
     // Certain models (e.g., OpenAI o1) do not support passing the temperature param.
     ...(includeStandardParams
@@ -395,17 +288,12 @@ export async function getModelFromConfig(
         }),
     ...(baseUrl ? { baseUrl } : {}),
     ...(apiKey ? { apiKey } : {}),
-    ...(azureConfig != null
-      ? {
-          azureOpenAIApiKey: azureConfig.azureOpenAIApiKey,
-          azureOpenAIApiInstanceName: azureConfig.azureOpenAIApiInstanceName,
-          azureOpenAIApiDeploymentName:
-            azureConfig.azureOpenAIApiDeploymentName,
-          azureOpenAIApiVersion: azureConfig.azureOpenAIApiVersion,
-          azureOpenAIBasePath: azureConfig.azureOpenAIBasePath,
-        }
-      : {}),
+    configuration: {
+      ...configuration,
+      baseURL: configuration?.baseURL || baseUrl,
+    },
   });
+  return initializedModel;
 }
 
 const cleanBase64 = (base64String: string): string => {

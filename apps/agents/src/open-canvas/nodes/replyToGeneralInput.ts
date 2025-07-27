@@ -22,6 +22,7 @@ export const replyToGeneralInput = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
+  console.log("- entering replyToGeneralInput");
   const smallModel = await getModelFromConfig(config);
 
   const prompt = `You are an AI assistant tasked with responding to the users question.

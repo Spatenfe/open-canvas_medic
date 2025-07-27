@@ -23,9 +23,8 @@ export const generateArtifact = async (
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> => {
-  const { modelName } = getModelConfig(config, {
-    isToolCalling: true,
-  });
+  console.log("- entering generateArtifact");
+  const { modelName } = getModelConfig(config);
   const smallModel = await getModelFromConfig(config, {
     temperature: 0.5,
     isToolCalling: true,

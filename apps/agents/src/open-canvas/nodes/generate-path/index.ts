@@ -27,12 +27,15 @@ export async function generatePath(
   state: typeof OpenCanvasGraphAnnotation.State,
   config: LangGraphRunnableConfig
 ): Promise<OpenCanvasGraphReturnType> {
+  console.log("- entering generatePath");
+
   const { _messages } = state;
   const newMessages: BaseMessage[] = [];
   const docMessage = await convertContextDocumentToHumanMessage(
     _messages,
     config
   );
+  
   const existingDocMessage = newMessages.find(
     (m) =>
       Array.isArray(m.content) &&
@@ -53,6 +56,7 @@ export async function generatePath(
     }
   }
 
+  console.log("-- mid generatePath");
   if (state.highlightedCode) {
     return {
       next: "updateArtifact",
@@ -116,6 +120,7 @@ export async function generatePath(
     };
   }
 
+  console.log("-- end generatePath");
   // Check if any URLs are in the latest message. If true, determine if the contents should be included
   // inline in the prompt, and if so, scrape the contents and update the prompt.
   const messageUrls = extractURLsFromLastMessage(state._messages);
@@ -127,6 +132,7 @@ export async function generatePath(
     );
   }
 
+  
   // Update the internal message list with the new message, if one was generated
   const newInternalMessageList = updatedMessageWithContents
     ? state._messages.map((m) => {
@@ -137,7 +143,8 @@ export async function generatePath(
         }
       })
     : state._messages;
-
+  console.log("-- mid end generatePath");
+  console.log(process.env.OPENAI_API_BASE);
   const routingResult = await dynamicDeterminePath({
     state: {
       ...state,
@@ -151,6 +158,7 @@ export async function generatePath(
     throw new Error("Route not found");
   }
 
+  console.log("-- end end 2 generatePath")
   // Create the messages object including the new messages if any
   const messages = newMessages.length
     ? {
